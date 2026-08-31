@@ -1,0 +1,80 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+          lower-case-service-id: true
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      routes:
+        # User & Auth Service Routes (Discovered via Eureka)
+        - id: user-service-auth
+          uri: ${USER_SERVICE_URL:lb://user-service}
+          predicates:
+            - Path=/api/auth/**
+
+        - id: user-service-users
+          uri: ${USER_SERVICE_URL:lb://user-service}
+          predicates:
+            - Path=/api/users/**
+
+        - id: user-service-sessions
+          uri: ${USER_SERVICE_URL:lb://user-service}
+          predicates:
+            - Path=/api/sessions/**
+
+        # Document & AI Service Routes (Discovered via Eureka)
+        - id: document-service-docs
+          uri: ${DOCUMENT_SERVICE_URL:lb://document-service}
+          predicates:
+            - Path=/api/documents/**
+
+        - id: document-service-chat
+          uri: ${DOCUMENT_SERVICE_URL:lb://document-service}
+          predicates:
+            - Path=/api/chat/**
+
+        - id: document-service-flashcards
+          uri: ${DOCUMENT_SERVICE_URL:lb://document-service}
+          predicates:
+            - Path=/api/flashcards/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${server.port}:${random.value}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
