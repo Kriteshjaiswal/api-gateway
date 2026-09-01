@@ -2,22 +2,15 @@ FROM eclipse-temurin:21-jdk-alpine AS builder
 
 WORKDIR /app
 
-# Install Maven
-RUN apk add --no-cache maven
+COPY pom.xml .
+COPY src ./src
 
-# Copy API Gateway project
-COPY apigateway/pom.xml .
-COPY apigateway/src ./src
+RUN apk add --no-cache maven && mvn clean package -DskipTests
 
-# Build application
-RUN mvn clean package -DskipTests
-
-# Runtime image
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Copy generated JAR
 COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 8080
